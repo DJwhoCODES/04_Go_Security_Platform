@@ -8,6 +8,10 @@ import (
 
 	"github.com/djwhocodes/auth-service/internal/config"
 	"github.com/djwhocodes/auth-service/internal/database"
+	"github.com/djwhocodes/auth-service/internal/handler"
+	"github.com/djwhocodes/auth-service/internal/repository"
+	"github.com/djwhocodes/auth-service/internal/security"
+	"github.com/djwhocodes/auth-service/internal/service"
 	"github.com/djwhocodes/auth-service/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,6 +25,7 @@ type Server struct {
 
 	db    *pgxpool.Pool
 	redis *redis.Client
+	cfg   *config.Config
 }
 
 func New(cfg *config.Config) *Server {
@@ -84,6 +89,7 @@ func New(cfg *config.Config) *Server {
 		http:   httpServer,
 		db:     db,
 		redis:  redisClient,
+		cfg:    cfg,
 	}
 }
 
@@ -92,6 +98,30 @@ func (s *Server) Start() {
 	logger.Log.Info("starting server",
 		zap.String("addr", s.http.Addr),
 	)
+
+	baseRepo := repository.NewRepository(s.db)
+
+	userRepo := repository.NewUserRepository(baseRepo)
+	tokenRepo := repository.NewTokenRepository(baseRepo)
+
+	jwtManager := security.NewJWTManager(
+		s.cfg.JWT.Secret,
+		s.cfg.JWT.Issuer,
+	)
+
+	authService := service.NewAuthService(
+		userRepo,
+		tokenRepo,
+		jwtManager,
+	)
+
+	authHandler := handler.NewAuthHandler(authService)
+
+	auth := s.engine.Group("/auth")
+	{
+		auth.POST("/register", authHandler.Register)
+		auth.POST("/login", authHandler.Login)
+	}
 
 	if err := s.http.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Log.Fatal("server failed", zap.Error(err))

@@ -12,6 +12,7 @@ type Config struct {
 	Log      LogConfig
 	Database DatabaseConfig
 	Redis    RedisConfig
+	JWT      JWTConfig
 }
 
 type ServerConfig struct {
@@ -45,6 +46,11 @@ type RedisConfig struct {
 	DB       int
 }
 
+type JWTConfig struct {
+	Secret string
+	Issuer string
+}
+
 func LoadConfig() *Config {
 
 	viper.SetConfigName("config")
@@ -64,10 +70,12 @@ func LoadConfig() *Config {
 			ReadTimeout:  viper.GetInt("server.read_timeout"),
 			WriteTimeout: viper.GetInt("server.write_timeout"),
 		},
+
 		App: AppConfig{
 			Name: viper.GetString("app.name"),
 			Env:  viper.GetString("app.env"),
 		},
+
 		Log: LogConfig{
 			Level: viper.GetString("log.level"),
 		},
@@ -86,6 +94,11 @@ func LoadConfig() *Config {
 			Port:     viper.GetInt("redis.port"),
 			Password: viper.GetString("redis.password"),
 			DB:       viper.GetInt("redis.db"),
+		},
+
+		JWT: JWTConfig{
+			Secret: viper.GetString("jwt.secret"),
+			Issuer: viper.GetString("jwt.issuer"),
 		},
 	}
 
