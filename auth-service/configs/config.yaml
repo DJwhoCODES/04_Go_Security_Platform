@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  read_timeout: 10
+  write_timeout: 10
+
+app:
+  name: auth-service
+  env: development
+
+log:
+  level: debug
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  dbname: auth_service
+  max_conns: 10
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
