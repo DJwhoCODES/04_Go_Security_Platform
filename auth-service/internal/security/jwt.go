@@ -1,6 +1,7 @@
 package security
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -48,25 +49,30 @@ func (j *JWTManager) GenerateAccessToken(
 }
 
 func (j *JWTManager) Verify(tokenStr string) (*Claims, error) {
+	claims := &Claims{}
 
-	token, err := jwt.ParseWithClaims(
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
+		secretKey := []byte(j.secret)
+		return secretKey, nil
+	}
+
+	parsedToken, err := jwt.ParseWithClaims(
 		tokenStr,
-		&Claims{},
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(j.secret), nil
-		},
+		claims,
+		keyFunc,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Claims)
-	if !ok || !token.Valid {
-		return nil, err
+	extractedClaims, ok := parsedToken.Claims.(*Claims)
+
+	if !ok || !parsedToken.Valid {
+		return nil, fmt.Errorf("invalid token")
 	}
 
-	return claims, nil
+	return extractedClaims, nil
 }
 
 func GenerateRefreshToken() (string, error) {
